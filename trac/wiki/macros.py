@@ -106,6 +106,7 @@ class TitleIndexMacro(WikiMacroBase):
        argument is given, include all pages.
      - `exclude=page1:page*2`: exclude pages that match an item in the colon-
        separated list of pages.
+     - `reverse=True`: reverse the list
 
     The `include` and `exclude` lists accept shell-style patterns.
     """)
@@ -122,6 +123,7 @@ class TitleIndexMacro(WikiMacroBase):
         depth = int(kw.get('depth', -1))
         start = prefix.count('/') if prefix else 0
         format = kw.get('format', '')
+        reverse = kw.get('reverse','')
 
         def parse_list(name):
             return [inc.strip() for inc in kw.get(name, '').split(':')
@@ -137,12 +139,17 @@ class TitleIndexMacro(WikiMacroBase):
 
         wiki = formatter.wiki
 
-        pages = sorted(page for page in wiki.get_pages(prefix)
+        if reverse == 'True':
+            reverse = True
+        else:
+            reverse = False
+            
+        pages = sorted((page for page in wiki.get_pages(prefix)
                        if (depth < 0 or depth >= page.count('/') - start)
                        and 'WIKI_VIEW' in formatter.perm('wiki', page)
                        and any(fnmatchcase(page, inc) for inc in includes)
-                       and not any(fnmatchcase(page, exc) for exc in excludes))
-
+                       and not any(fnmatchcase(page, exc) for exc in excludes)),reverse=reverse)
+            
         if format == 'compact':
             return tag(
                 separated((tag.a(wiki.format_page_name(omitprefix(p)),
